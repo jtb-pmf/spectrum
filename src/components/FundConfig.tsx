@@ -151,7 +151,7 @@ export function FundConfig({ params, onChange }: FundConfigProps) {
 
       {/* Fee & Carry */}
       <h3 className="text-lg font-medium text-gray-300 mb-3">Fee & Carry</h3>
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="space-y-4 mb-6">
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">
             Management Fee
