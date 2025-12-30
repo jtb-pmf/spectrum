@@ -197,8 +197,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">PMF Fund Simulator</h1>
-              <p className="text-sm text-gray-400">Monte Carlo analysis for VC fund outcomes</p>
+              <h1 className="text-2xl font-bold">Spectrum</h1>
+              <p className="text-sm text-gray-400">Monte Carlo simulation for VC fund outcomes</p>
             </div>
             <div className="flex items-center gap-4">
               {/* Database status indicator */}
@@ -307,7 +307,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-4 mt-auto">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
-          PMF Fund Simulator &middot; Monte Carlo simulation for VC fund modeling
+          Spectrum &middot; Monte Carlo simulation for VC fund modeling
         </div>
       </footer>
     </div>

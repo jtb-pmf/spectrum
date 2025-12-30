@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PMF Fund Simulator",
+  title: "Spectrum",
   description: "Monte Carlo simulation for VC fund outcomes",
 };
 
