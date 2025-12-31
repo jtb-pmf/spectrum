@@ -8,35 +8,40 @@ export interface FundParams {
   mgmtFeeStepdown: number;    // Stepdown multiplier after full years
   carry: number;              // Carry on profits (default 20%)
 
-  // Discovery stage
-  discoveryCheckSize: number; // $100K default
-  maxDiscoveryChecks: number; // Varies by fund size
+  // Investment strategy
+  targetConvictionCount: number;    // Target # of conviction investments (e.g., 25)
+  graduationRate: number;           // % of discovery that graduate (e.g., 25%)
+  // Derived: discoveryCount = targetConvictionCount / graduationRate
 
-  // Conviction stage
+  // Check sizes
+  discoveryCheckSize: number;       // $100K default
   convictionCheckSize: number;      // $400K default
-  convictionCheckMin: number;       // $250K min
-  convictionCheckMax: number;       // $750K max
-  graduationRate: number;           // ~25% of discovery → conviction
+  convictionCheckMin: number;       // $250K min (for reference)
+  convictionCheckMax: number;       // $750K max (for reference)
 
   // Follow-on reserves (% of fund)
   followOnReservePercent: number;   // 10-30% depending on fund size
+
+  // Base success rates (configurable inputs to Monte Carlo)
+  discoverySuccessRate: number;     // Base rate for discovery companies (default 30%)
+  convictionSuccessRate: number;    // Base rate for conviction companies (default 50%)
 }
 
 // Preset fund sizes
 export const FUND_PRESETS: Record<string, Partial<FundParams>> = {
   '16M': {
     fundSize: 16_000_000,
-    maxDiscoveryChecks: 55,      // 50-60
+    targetConvictionCount: 17,   // 15-18
     followOnReservePercent: 0.10,
   },
   '25M': {
     fundSize: 25_000_000,
-    maxDiscoveryChecks: 75,      // 70-80
+    targetConvictionCount: 22,   // 20-25
     followOnReservePercent: 0.20,
   },
   '40M': {
     fundSize: 40_000_000,
-    maxDiscoveryChecks: 110,     // 100-120
+    targetConvictionCount: 30,   // 28-32
     followOnReservePercent: 0.30,
   },
 };
@@ -49,15 +54,18 @@ export const DEFAULT_FUND_PARAMS: FundParams = {
   mgmtFeeStepdown: 0.7,
   carry: 0.20,
 
-  discoveryCheckSize: 100_000,
-  maxDiscoveryChecks: 75,
+  targetConvictionCount: 22,    // Target 20-25 conviction investments
+  graduationRate: 0.25,         // 25% of discovery graduates
 
+  discoveryCheckSize: 100_000,
   convictionCheckSize: 400_000,
   convictionCheckMin: 250_000,
   convictionCheckMax: 750_000,
-  graduationRate: 0.25,
 
   followOnReservePercent: 0.20,
+
+  discoverySuccessRate: 0.30,   // 30% of discovery companies return >1x
+  convictionSuccessRate: 0.50,  // 50% of conviction companies return >1x
 };
 
 // Investment tracking types

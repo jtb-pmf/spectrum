@@ -63,14 +63,15 @@ interface OutcomeParams {
 /**
  * Calculate outcome parameters based on fund configuration.
  *
- * Selectivity bonus: Lower graduation rates mean you're picking better companies.
- * Formula: selectivityBonus = (0.25 - graduationRate) / 0.25
- *   - At 25% graduation: bonus = 0 (baseline)
- *   - At 15% graduation: bonus = 0.4 (40% improvement)
- *   - At 35% graduation: bonus = -0.4 (40% worse)
+ * Base success rates are configurable inputs:
+ * - discoverySuccessRate: % of discovery companies that return >1x (default 30%)
+ * - convictionSuccessRate: % of conviction companies that return >1x (default 50%)
+ *
+ * Selectivity bonus adjusts these based on graduation rate:
+ * - Lower graduation rate = more selective = better outcomes
  */
 function calculateOutcomeParams(params: FundParams): OutcomeParams {
-  const { graduationRate, followOnReservePercent, fundSize } = params;
+  const { graduationRate, followOnReservePercent, fundSize, discoverySuccessRate, convictionSuccessRate } = params;
 
   // Selectivity bonus: how much better/worse are conviction picks vs baseline
   // Baseline is 25% graduation rate
@@ -90,27 +91,44 @@ function calculateOutcomeParams(params: FundParams): OutcomeParams {
   // Combined conviction quality bonus (capped at reasonable range)
   const qualityBonus = Math.max(-0.3, Math.min(0.5, selectivityBonus + followOnBonus * 0.3 + scaleBonus * 0.2));
 
-  // Discovery-only outcomes (these don't graduate, so they're the "rejected" companies)
-  // Higher selectivity means discovery-only companies are worse (you filtered out the good ones)
-  const discoveryPenalty = selectivityBonus * 0.1; // Small effect
+  // Discovery fail rate derived from configurable success rate
+  // discoverySuccessRate is % that return >1x, so fail rate = 1 - successRate adjusted for selectivity
+  const discoveryPenalty = selectivityBonus * 0.05; // Small effect - more selective means leftover discovery is worse
+  const discoveryFailRate = Math.min(0.85, Math.max(0.50, (1 - discoverySuccessRate) + discoveryPenalty));
+
+  // Distribute remaining discovery outcomes (companies that don't fail)
+  const discoverySuccessPool = 1 - discoveryFailRate;
+  const discoveryLowReturnRate = discoverySuccessPool * 0.50;   // Half return 0.5-2x
+  const discoveryMidReturnRate = discoverySuccessPool * 0.25;   // Quarter return 2-5x
+  const discoveryHighReturnRate = discoverySuccessPool * 0.15;  // 15% return 5-10x
+  const discoveryOutlierRate = discoverySuccessPool * 0.10;     // 10% return 10x+
+
+  // Conviction fail rate derived from configurable success rate + quality bonus
+  const convictionFailRate = Math.min(0.65, Math.max(0.30, (1 - convictionSuccessRate) - qualityBonus * 0.10));
+
+  // Distribute remaining conviction outcomes
+  const convictionSuccessPool = 1 - convictionFailRate;
+  const convictionLowReturnRate = convictionSuccessPool * 0.45;    // ~1x returns
+  const convictionMidReturnRate = convictionSuccessPool * 0.22;    // ~3x returns
+  const convictionGoodReturnRate = convictionSuccessPool * 0.15;   // ~7x returns
+  const convictionGreatReturnRate = convictionSuccessPool * 0.10;  // ~20x returns
+  const convictionOutlierRate = convictionSuccessPool * 0.05;      // ~40x returns
+  const convictionMegaOutlierRate = convictionSuccessPool * 0.03;  // 100x+ returns
 
   return {
-    // Discovery-only: baseline from seed benchmarks, slightly affected by selectivity
-    discoveryFailRate: Math.min(0.80, 0.70 + discoveryPenalty * 0.1),
-    discoveryLowReturnRate: 0.15,
-    discoveryMidReturnRate: 0.07 - discoveryPenalty * 0.02,
-    discoveryHighReturnRate: 0.05 - discoveryPenalty * 0.02,
-    discoveryOutlierRate: 0.03 - discoveryPenalty * 0.01,
+    discoveryFailRate,
+    discoveryLowReturnRate,
+    discoveryMidReturnRate,
+    discoveryHighReturnRate,
+    discoveryOutlierRate,
 
-    // Conviction: significantly affected by selectivity
-    // More selective = lower fail rate, higher outlier rates
-    convictionFailRate: Math.max(0.35, Math.min(0.60, 0.50 - qualityBonus * 0.15)),
-    convictionLowReturnRate: 0.27 - qualityBonus * 0.05,
-    convictionMidReturnRate: 0.12 + qualityBonus * 0.02,
-    convictionGoodReturnRate: 0.06 + qualityBonus * 0.02,
-    convictionGreatReturnRate: 0.035 + qualityBonus * 0.015,
-    convictionOutlierRate: 0.01 + qualityBonus * 0.005,
-    convictionMegaOutlierRate: 0.005 + qualityBonus * 0.003,
+    convictionFailRate,
+    convictionLowReturnRate,
+    convictionMidReturnRate,
+    convictionGoodReturnRate,
+    convictionGreatReturnRate,
+    convictionOutlierRate,
+    convictionMegaOutlierRate,
 
     // Multiplier bases: better selectivity = higher potential multiples
     convictionGreatMultiplierBase: 15 + qualityBonus * 5,
@@ -296,7 +314,7 @@ function binarySearchIRR(cashFlows: number[]): number {
  */
 export function simulateFundOnce(params: FundParams, rng: SeededRandom): SimulationResult {
   const { fundLife, fundSize, mgmtFeeRate, mgmtFeeFullYears, mgmtFeeStepdown, carry } = params;
-  const { discoveryCheckSize, maxDiscoveryChecks, convictionCheckSize, graduationRate, followOnReservePercent } = params;
+  const { discoveryCheckSize, targetConvictionCount, convictionCheckSize, graduationRate, followOnReservePercent } = params;
 
   // Calculate outcome parameters based on fund configuration
   const outcomeParams = calculateOutcomeParams(params);
@@ -317,9 +335,9 @@ export function simulateFundOnce(params: FundParams, rng: SeededRandom): Simulat
   const followOnReserve = investableCapital * followOnReservePercent;
   const deployableCapital = investableCapital - followOnReserve;
 
-  // Number of companies at each stage
-  const numDiscovery = maxDiscoveryChecks;
-  const numConviction = Math.round(numDiscovery * graduationRate);
+  // Derive number of discovery checks from target conviction count and graduation rate
+  const numDiscovery = Math.round(targetConvictionCount / graduationRate);
+  const numConviction = targetConvictionCount;
 
   // Capital allocation
   const discoveryTotal = numDiscovery * discoveryCheckSize;

@@ -16,9 +16,10 @@ import {
 interface SimulationResultsProps {
   results: MonteCarloResults | null;
   isRunning: boolean;
+  isStale?: boolean;
 }
 
-export function SimulationResults({ results, isRunning }: SimulationResultsProps) {
+export function SimulationResults({ results, isRunning, isStale = false }: SimulationResultsProps) {
   if (isRunning) {
     return (
       <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
@@ -60,8 +61,18 @@ export function SimulationResults({ results, isRunning }: SimulationResultsProps
 
   return (
     <div className="space-y-6">
+      {/* Stale indicator */}
+      {isStale && (
+        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg px-4 py-2 flex items-center gap-2 text-yellow-400 text-sm">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          Configuration changed — results may not reflect current settings
+        </div>
+      )}
+
       {/* Key Metrics */}
-      <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+      <div className={`bg-gray-900 rounded-lg p-6 border border-gray-800 ${isStale ? 'opacity-50' : ''}`}>
         <h2 className="text-xl font-semibold mb-4 text-white">Key Metrics</h2>
 
         <div className="grid grid-cols-4 gap-4 mb-6">
@@ -108,7 +119,7 @@ export function SimulationResults({ results, isRunning }: SimulationResultsProps
       </div>
 
       {/* Distribution Chart */}
-      <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+      <div className={`bg-gray-900 rounded-lg p-6 border border-gray-800 ${isStale ? 'opacity-50' : ''}`}>
         <h2 className="text-xl font-semibold mb-4 text-white">Net TVPI Distribution</h2>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -148,7 +159,7 @@ export function SimulationResults({ results, isRunning }: SimulationResultsProps
       </div>
 
       {/* Detailed Statistics */}
-      <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+      <div className={`bg-gray-900 rounded-lg p-6 border border-gray-800 ${isStale ? 'opacity-50' : ''}`}>
         <h2 className="text-xl font-semibold mb-4 text-white">Distribution Statistics</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

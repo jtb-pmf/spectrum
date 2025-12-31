@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { FundParams, DEFAULT_FUND_PARAMS, MonteCarloResults, Investment } from '@/types';
 import { runMonteCarloSimulation } from '@/lib/simulation';
 import { FundConfig } from '@/components/FundConfig';
@@ -25,6 +25,10 @@ export default function Home() {
   const [results, setResults] = useState<MonteCarloResults | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [numSimulations, setNumSimulations] = useState(5000);
+
+  // Track if results are stale (params changed since last simulation)
+  const lastSimParamsRef = useRef<string | null>(null);
+  const lastSimCountRef = useRef<number | null>(null);
 
   // Database state
   const [fundId, setFundId] = useState<string | null>(null);
@@ -60,9 +64,18 @@ export default function Home() {
     setTimeout(() => {
       const simulationResults = runMonteCarloSimulation(params, numSimulations);
       setResults(simulationResults);
+      // Track the params used for this simulation
+      lastSimParamsRef.current = JSON.stringify(params);
+      lastSimCountRef.current = numSimulations;
       setIsRunning(false);
     }, 50);
   }, [params, numSimulations]);
+
+  // Check if results are stale (params changed since last simulation)
+  const isResultsStale = results !== null && (
+    lastSimParamsRef.current !== JSON.stringify(params) ||
+    lastSimCountRef.current !== numSimulations
+  );
 
   // Run simulation on mount
   useEffect(() => {
@@ -282,7 +295,7 @@ export default function Home() {
               <FundConfig params={params} onChange={setParams} />
             </div>
             <div className="lg:col-span-2">
-              <SimulationResults results={results} isRunning={isRunning} />
+              <SimulationResults results={results} isRunning={isRunning} isStale={isResultsStale} />
             </div>
           </div>
         )}

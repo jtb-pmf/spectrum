@@ -40,13 +40,15 @@ export async function getOrCreateDefaultFund() {
     mgmtFeeFullYears: 4,
     mgmtFeeStepdown: 0.7,
     carry: 0.20,
+    targetConvictionCount: 22,
+    graduationRate: 0.25,
     discoveryCheckSize: 100_000,
-    maxDiscoveryChecks: 75,
     convictionCheckSize: 400_000,
     convictionCheckMin: 250_000,
     convictionCheckMax: 750_000,
-    graduationRate: 0.25,
     followOnReservePercent: 0.20,
+    discoverySuccessRate: 0.30,
+    convictionSuccessRate: 0.50,
   };
 
   const result = await db.insert(schema.funds).values({
